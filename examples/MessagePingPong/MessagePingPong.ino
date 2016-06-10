@@ -27,36 +27,39 @@
 #include <SPI.h>
 #include <DW1000.h>
 
+// connection pins
+const uint8_t PIN_RST = 9; // reset pin
+const uint8_t PIN_IRQ = 2; // irq pin
+const uint8_t PIN_SS = SS; // spi select pin
+
 // toggle state
 #define SENDER true
 #define RECEIVER false
 // toggle and message RX/TX
-// NOTE: the other Arduino needs to be configured with RECEIVER 
+// NOTE: the other Arduino needs to be configured with RECEIVER
 //       (or SENDER respectively)
 volatile boolean trxToggle = RECEIVER;
 volatile boolean trxAck = false;
 volatile boolean rxError = false;
 String msg;
-// reset line to the chip
-int RST = 9;
 
 void setup() {
   // DEBUG monitoring
   Serial.begin(9600);
-  Serial.println("### DW1000-arduino-ping-pong-test ###");
+  Serial.println(F("### DW1000-arduino-ping-pong-test ###"));
   // initialize the driver
-  DW1000.begin(0, RST);
-  DW1000.select(SS);
-  Serial.println("DW1000 initialized ...");
+  DW1000.begin(PIN_IRQ, PIN_RST);
+  DW1000.select(PIN_SS);
+  Serial.println(F("DW1000 initialized ..."));
   // general configuration
   DW1000.newConfiguration();
   DW1000.setDefaults();
   DW1000.setDeviceAddress(1);
   DW1000.setNetworkId(10);
   DW1000.commitConfiguration();
-  Serial.println("Committed configuration ...");
+  Serial.println(F("Committed configuration ..."));
   // DEBUG chip info and registers pretty printed
-  char msgInfo[1024];
+  char msgInfo[128];
   DW1000.getPrintableDeviceIdentifier(msgInfo);
   Serial.print("Device ID: "); Serial.println(msgInfo);
   DW1000.getPrintableExtendedUniqueIdentifier(msgInfo);
@@ -70,7 +73,7 @@ void setup() {
   DW1000.attachReceivedHandler(handleReceived);
   DW1000.attachReceiveFailedHandler(handleReceiveFailed);
   // sender starts by sending a PING message, receiver starts listening
-  if(trxToggle == SENDER) {
+  if (trxToggle == SENDER) {
     msg = "Ping ...";
     receiver();
     transmit();
@@ -111,21 +114,21 @@ void receiver() {
 }
 
 void loop() {
-  if(rxError) {
-     Serial.println("Failed to properly receive message.");
-     rxError = false;
-     return;
+  if (rxError) {
+    Serial.println("Failed to properly receive message.");
+    rxError = false;
+    return;
   }
-  if(!trxAck) {
+  if (!trxAck) {
     return;
   }
   // continue on any success confirmation
-  trxAck = false; 
+  trxAck = false;
   // a sender will be a receiver and vice versa
   trxToggle = !trxToggle;
-  if(trxToggle == SENDER) {
+  if (trxToggle == SENDER) {
     // formerly a receiver
-    String rxMsg; 
+    String rxMsg;
     DW1000.getData(rxMsg);
     Serial.print("Received: "); Serial.println(rxMsg);
     transmit();

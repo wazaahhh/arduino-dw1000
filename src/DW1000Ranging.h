@@ -41,7 +41,6 @@
 //Default Pin for module:
 #define DEFAULT_RST_PIN 9
 #define DEFAULT_SPI_SS_PIN 10
-#define DEFAULT_INT 0
 
 //Default value
 //in ms
@@ -55,9 +54,6 @@
 
 //default timer delay
 #define DEFAULT_TIMER_DELAY 80
- 
-//default Network Id
-#define DEFAULT_NETWORK_Id 0xDECA
 
 
 //debug mode
@@ -67,132 +63,126 @@
 
 
 class DW1000RangingClass {
-  public:
-    //variables 
-    // data buffer
-    static byte data[LEN_DATA];
-    
-    
-    //initialisation
-	static void initCommunication(unsigned int myRST, unsigned int mySS);
-    static void initCommunication(unsigned int myRST=DEFAULT_RST_PIN, unsigned int mySS=DEFAULT_SPI_SS_PIN, unsigned int myINT=DEFAULT_INT);
-    static void configureNetwork(unsigned int deviceAddress, unsigned int networkId, const byte mode[]); 
-    static void generalStart(char address[], const byte mode[],byte familyId, byte nodeId,unsigned int networkId,byte type);
-    static void startAsAnchor(char address[], const byte mode[]);
-	static void startAsAnchor(char address[],const byte mode[], byte familyId, byte nodeId);
-	static void startAsAnchor(char address[],const byte mode[], byte familyId, byte nodeId, unsigned int networkId);
-	static void startAsTag(char address[], const byte mode[]);
-	static void startAsTag(char address[],const byte mode[], byte familyId, byte nodeId);
-	static void startAsTag(char address[],const byte mode[], byte familyId, byte nodeId, unsigned int networkId);
-          
-    static boolean addNetworkDevices(DW1000Device *device, boolean shortAddress=false);
-    static void removeNetworkDevices(short index);
-    
-    //setters
-    static void setReplyTime(unsigned int replyDelayTimeUs);
-    static void setResetPeriod(unsigned long resetPeriod);
-    
-    //getters 
-    static byte* getCurrentAddress(){return _currentAddress; };
-    static byte* getCurrentShortAddress(){return _currentShortAddress; };
-    static short getNetworkDevicesNumber(){return _networkDevicesNumber; };
-	static byte* generateShortAddress();
-    
-    //ranging functions
-    static short detectMessageType(byte datas[]);
-    static void loop();
-    
-    
-    //Handlers:
-    static void attachNewRange(void (*handleNewRange)(void)) {_handleNewRange = handleNewRange; };
-    
-    
-    static DW1000Device* getDistantDevice();
-    static DW1000Device* searchDistantDevice(byte shortAddress[]);
-    
-    //FOR DEBUGGING
-    static void visualizeDatas(byte datas[]);
-    
-        
-  private: 
-    //other devices in the network
-    static DW1000Device _networkDevices[MAX_DEVICES];
-    static short _networkDevicesNumber;
-    static short _lastDistantDevice;
-    static byte _currentAddress[8];
-    static byte _currentShortAddress[2];
-    static byte _lastSentToShortAddress[2]; 
-    static DW1000Mac _globalMac;
-    static long timer;
-    static short counterForBlink;
-    
-    //Handlers:
-    static void (*_handleNewRange)(void);
-    
-    //sketch type (tag or anchor)
-    static int _type; //0 for tag and 1 for anchor
-    // message flow state
-    static volatile byte _expectedMsgId;
-    // message sent/received state
-    static volatile boolean _sentAck;
-    static volatile boolean _receivedAck;
-    // protocol error state
-    static boolean _protocolFailed; 
-    // reset line to the chip
-    static unsigned int _RST;
-    static unsigned int _SS;
-    // watchdog and reset period
-    static unsigned long _lastActivity;
-    static unsigned long _resetPeriod;
-    // reply times (same on both sides for symm. ranging)
-    static unsigned int _replyDelayTimeUS;
-    //timer Tick delay
-    static unsigned int _timerDelay;
-    // ranging counter (per second)
-    static unsigned int _successRangingCount;
-    static unsigned long _rangingCountPeriod;
-    
-    //_bias correction
-    static char _bias_RSL[17];
-    //17*2=34 bytes in SRAM
-    static short _bias_PRF_16[17];
-    //17 bytes in SRAM
-    static char _bias_PRF_64[17];
+public:
+	//variables 
+	// data buffer
+	static byte data[LEN_DATA];
+	
+	
+	//initialisation
+	static void    initCommunication(uint8_t myRST = DEFAULT_RST_PIN, uint8_t mySS = DEFAULT_SPI_SS_PIN, uint8_t myIRQ = 2);
+	static void    configureNetwork(unsigned int deviceAddress, unsigned int networkId, const byte mode[]);
+	static void    generalStart();
+	static void    startAsAnchor(char address[], const byte mode[]);
+	static void    startAsTag(char address[], const byte mode[]);
+	static boolean addNetworkDevices(DW1000Device* device, boolean shortAddress);
+	static boolean addNetworkDevices(DW1000Device* device);
+	static void    removeNetworkDevices(short index);
+	
+	//setters
+	static void setReplyTime(unsigned int replyDelayTimeUs);
+	static void setResetPeriod(unsigned long resetPeriod);
+	
+	//getters 
+	static byte* getCurrentAddress() { return _currentAddress; };
+	
+	static byte* getCurrentShortAddress() { return _currentShortAddress; };
+	
+	static short getNetworkDevicesNumber() { return _networkDevicesNumber; };
+	
+	//ranging functions
+	static short detectMessageType(byte datas[]);
+	static void  loop();
+	
+	
+	//Handlers:
+	static void attachNewRange(void (* handleNewRange)(void)) { _handleNewRange = handleNewRange; };
+	
+	
+	static DW1000Device* getDistantDevice();
+	static DW1000Device* searchDistantDevice(byte shortAddress[]);
+	
+	//FOR DEBUGGING
+	static void visualizeDatas(byte datas[]);
 
-    
-    
-    //methods
-    static void handleSent();
-    static void handleReceived();
-    static void noteActivity();
-    static void resetInactive();
-    
-    //global functions:
-    static void checkForReset();
-    static void checkForInactiveDevices();
-    static void copyShortAddress(byte address1[],byte address2[]);
-    
-    //for ranging protocole (ANCHOR)
-    static void transmitInit();
-    static void transmit(byte datas[]);
-    static void transmit(byte datas[], DW1000Time time);
-    static void transmitBlink();
-    static void transmitRangingInit(DW1000Device *myDistantDevice);
-    static void transmitPollAck(DW1000Device *myDistantDevice);
-    static void transmitRangeReport(DW1000Device *myDistantDevice);
-    static void transmitRangeFailed(DW1000Device *myDistantDevice);
-    static void receiver();
-    
-    //for ranging protocole (TAG)
-    static void transmitPoll(DW1000Device *myDistantDevice);
-    static void transmitRange(DW1000Device *myDistantDevice);
-    
-    //methods for range computation
-    static void computeRangeAsymmetric(DW1000Device *myDistantDevice, DW1000Time *myTOF);
-    
-    static void timerTick();
-     
 
+private:
+	//other devices in the network
+	static DW1000Device _networkDevices[MAX_DEVICES];
+	static short        _networkDevicesNumber;
+	static short        _lastDistantDevice;
+	static byte         _currentAddress[8];
+	static byte         _currentShortAddress[2];
+	static byte         _lastSentToShortAddress[2];
+	static DW1000Mac    _globalMac;
+	static long         timer;
+	static short        counterForBlink;
+	
+	//Handlers:
+	static void (* _handleNewRange)(void);
+	
+	//sketch type (tag or anchor)
+	static int              _type; //0 for tag and 1 for anchor
+	// message flow state
+	static volatile byte    _expectedMsgId;
+	// message sent/received state
+	static volatile boolean _sentAck;
+	static volatile boolean _receivedAck;
+	// protocol error state
+	static boolean          _protocolFailed;
+	// reset line to the chip
+	static unsigned int     _RST;
+	static unsigned int     _SS;
+	// watchdog and reset period
+	static unsigned long    _lastActivity;
+	static unsigned long    _resetPeriod;
+	// reply times (same on both sides for symm. ranging)
+	static unsigned int     _replyDelayTimeUS;
+	//timer Tick delay
+	static unsigned int     _timerDelay;
+	// ranging counter (per second)
+	static unsigned int     _successRangingCount;
+	static unsigned long    _rangingCountPeriod;
+	
+	//_bias correction
+	static char  _bias_RSL[17];
+	//17*2=34 bytes in SRAM
+	static short _bias_PRF_16[17];
+	//17 bytes in SRAM
+	static char  _bias_PRF_64[17];
+	
+	
+	//methods
+	static void handleSent();
+	static void handleReceived();
+	static void noteActivity();
+	static void resetInactive();
+	
+	//global functions:
+	static void checkForReset();
+	static void checkForInactiveDevices();
+	static void copyShortAddress(byte address1[], byte address2[]);
+	
+	//for ranging protocole (ANCHOR)
+	static void transmitInit();
+	static void transmit(byte datas[]);
+	static void transmit(byte datas[], DW1000Time time);
+	static void transmitBlink();
+	static void transmitRangingInit(DW1000Device* myDistantDevice);
+	static void transmitPollAck(DW1000Device* myDistantDevice);
+	static void transmitRangeReport(DW1000Device* myDistantDevice);
+	static void transmitRangeFailed(DW1000Device* myDistantDevice);
+	static void receiver();
+	
+	//for ranging protocole (TAG)
+	static void transmitPoll(DW1000Device* myDistantDevice);
+	static void transmitRange(DW1000Device* myDistantDevice);
+	
+	//methods for range computation
+	static void computeRangeAsymmetric(DW1000Device* myDistantDevice, DW1000Time* myTOF);
+	
+	static void timerTick();
+	
 };
 
 extern DW1000RangingClass DW1000Ranging;
