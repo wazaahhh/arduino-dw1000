@@ -55,7 +55,6 @@
 //default timer delay
 #define DEFAULT_TIMER_DELAY 80
 
-
 //debug mode
 #ifndef DEBUG
 #define DEBUG false
@@ -93,10 +92,19 @@ public:
 	//ranging functions
 	static short detectMessageType(byte datas[]);
 	static void  loop();
-	
+	static void useRangeFilter(boolean enabled);
+	// Used for the smoothing algorithm (Exponential Moving Average). newValue must be >= 2. Default 15.
+	static void setRangeFilterValue(unsigned int newValue);
 	
 	//Handlers:
 	static void attachNewRange(void (* handleNewRange)(void)) { _handleNewRange = handleNewRange; };
+	
+	static void attachBlinkDevice(void (* handleBlinkDevice)(DW1000Device*)) { _handleBlinkDevice = handleBlinkDevice; };
+	
+	static void attachNewDevice(void (* handleNewDevice)(DW1000Device*)) { _handleNewDevice = handleNewDevice; };
+	
+	static void attachInactiveDevice(void (* handleInactiveDevice)(DW1000Device*)) { _handleInactiveDevice = handleInactiveDevice; };
+	
 	
 	
 	static DW1000Device* getDistantDevice();
@@ -120,6 +128,9 @@ private:
 	
 	//Handlers:
 	static void (* _handleNewRange)(void);
+	static void (* _handleBlinkDevice)(DW1000Device*);
+	static void (* _handleNewDevice)(DW1000Device*);
+	static void (* _handleInactiveDevice)(DW1000Device*);
 	
 	//sketch type (tag or anchor)
 	static int              _type; //0 for tag and 1 for anchor
@@ -143,7 +154,9 @@ private:
 	// ranging counter (per second)
 	static unsigned int     _successRangingCount;
 	static unsigned long    _rangingCountPeriod;
-	
+	//ranging filter
+	static volatile boolean _useRangeFilter;
+	static unsigned int _rangeFilterValue;
 	//_bias correction
 	static char  _bias_RSL[17];
 	//17*2=34 bytes in SRAM
@@ -183,6 +196,8 @@ private:
 	
 	static void timerTick();
 	
+	//Utils
+	static float filterValue(float value, float previousValue, int numberOfElements);
 };
 
 extern DW1000RangingClass DW1000Ranging;
